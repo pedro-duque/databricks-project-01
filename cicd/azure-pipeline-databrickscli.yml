@@ -1,0 +1,62 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - main
+  paths:
+    include:
+      - '$(SOURCE_FILES_PATH)/*'
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: CI
+    displayName: "Continuous Integration"
+    jobs:
+      - job: CIJob
+        displayName: "Countinuous Integration Steps"
+        steps:
+          - checkout: self
+            clean: true
+
+  - stage: CD
+    displayName: "Continuous Deployment"      
+    dependsOn: CI
+    jobs:
+    - job: DeployToDev
+      displayName: "Deploy to Dev Environment"
+      steps:
+        - script: |
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+            $(DEV_DATABRICKS_URL)/api/2.0/workspace/mkdirs -d '{ "path": "/$(TARGET_FILES_PATH)/" }'
+          displayName: 'Create App Dir if it does not exist'
+
+        - script: |
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+            $(DEV_DATABRICKS_URL)/api/2.0/workspace/delete -d '{ "path": "/$(TARGET_FILES_PATH)/", "recursive": true }'
+          displayName: 'Clean Workspace'
+
+        - script: |
+            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST $(DEV_DATABRICKS_URL)/api/2.0/workspace/import -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP -F content=@notebooks.zip
+          displayName: 'Import Notebooks'
+
+    - job: DeployToProd
+      displayName: "Deploy to Prod Environment"
+      dependsOn: "DeployToDev"
+      steps:
+        - script: |
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
+            $(PRO_DATABRICKS_URL)/api/2.0/workspace/mkdirs -d '{ "path": "/$(TARGET_FILES_PATH)/" }'
+          displayName: 'Create App Dir if it does not exist'
+
+        - script: |
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
+            $(PRO_DATABRICKS_URL)/api/2.0/workspace/delete -d '{ "path": "/$(TARGET_FILES_PATH)/", "recursive": true }'
+          displayName: 'Clean Workspace'
+
+        - script: |
+            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST $(PRO_DATABRICKS_URL)/api/2.0/workspace/import -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP -F content=@notebooks.zip
+          displayName: 'Import Notebooks'
