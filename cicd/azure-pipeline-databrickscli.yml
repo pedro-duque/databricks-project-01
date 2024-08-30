@@ -19,6 +19,14 @@ stages:
         steps:
           - checkout: self
             clean: true
+          - task: UsePythonVersion@0
+            displayName: 'Use Python 3.9'
+            inputs:
+              versionSpec: 3.9
+
+          - script: |
+              pip install pytest
+            displayName: 'Load Python dependencies'
 
   - stage: CD
     displayName: "Continuous Deployment"      
@@ -28,35 +36,45 @@ stages:
       displayName: "Deploy to Dev Environment"
       steps:
         - script: |
-            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
-            $(DEV_DATABRICKS_URL)/api/2.0/workspace/mkdirs -d '{ "path": "/$(TARGET_FILES_PATH)/" }'
+            curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          displayName: 'download and install databricks-cli'
+
+        - script: |
+            echo $(DEV_BEARER_TOKEN) | databricks configure --host $(DEV_DATABRICKS_URL) --token $(DEV_BEARER_TOKEN) 
+          displayName: 'Configure DataBricks DEV CLI'
+
+        - script: |
+            databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
           displayName: 'Create App Dir if it does not exist'
 
         - script: |
-            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
-            $(DEV_DATABRICKS_URL)/api/2.0/workspace/delete -d '{ "path": "/$(TARGET_FILES_PATH)/", "recursive": true }'
+            databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
           displayName: 'Clean Workspace'
 
         - script: |
-            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
-            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST $(DEV_DATABRICKS_URL)/api/2.0/workspace/import -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP -F content=@notebooks.zip
-          displayName: 'Import Notebooks'
+            databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
+          displayName: 'Copy to Workspace'
 
     - job: DeployToProd
       displayName: "Deploy to Prod Environment"
       dependsOn: "DeployToDev"
       steps:
         - script: |
-            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
-            $(PRO_DATABRICKS_URL)/api/2.0/workspace/mkdirs -d '{ "path": "/$(TARGET_FILES_PATH)/" }'
+            curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          displayName: 'download and install databricks-cli'
+
+        - script: |
+            echo $(PRO_BEARER_TOKEN) | databricks configure --host $(PRO_DATABRICKS_URL) --token $(PRO_BEARER_TOKEN) 
+          displayName: 'Configure DataBricks DEV CLI'
+
+        - script: |
+            databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
           displayName: 'Create App Dir if it does not exist'
 
         - script: |
-            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
-            $(PRO_DATABRICKS_URL)/api/2.0/workspace/delete -d '{ "path": "/$(TARGET_FILES_PATH)/", "recursive": true }'
+            databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
           displayName: 'Clean Workspace'
 
         - script: |
-            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
-            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST $(PRO_DATABRICKS_URL)/api/2.0/workspace/import -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP -F content=@notebooks.zip
-          displayName: 'Import Notebooks'
+            databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
+          displayName: 'Copy to Workspace'
