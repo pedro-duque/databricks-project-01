@@ -38,7 +38,7 @@ stages:
           displayName: 'Clean Workspace'
 
         - script: |
-            for notebook in $(find ./$(SOURCE_FILES_PATH)/ -type f); do
+            for notebook in $(find $(SOURCE_FILES_PATH)/ -type f); do
               dest_path="/$(TARGET_FILES_PATH)/$(basename $notebook)"
               curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
               $(DEV_DATABRICKS_URL)/api/2.0/workspace/import \
@@ -62,7 +62,7 @@ stages:
           displayName: 'Clean Workspace'
 
         - script: |
-            for notebook in $(find ./$(SOURCE_FILES_PATH)/ -type f); do
+            for notebook in $(find $(SOURCE_FILES_PATH)/ -type f); do
               dest_path="/$(TARGET_FILES_PATH)/$(basename $notebook)"
               curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
               $(PRO_DATABRICKS_URL)/api/2.0/workspace/import \
