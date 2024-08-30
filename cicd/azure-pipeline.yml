@@ -19,3 +19,40 @@ stages:
         steps:
           - checkout: self
             clean: true
+
+  - stage: CD
+    displayName: "Continuous Deployment"      
+    dependsOn: CI
+    jobs:
+    - job: DeployToDev
+      displayName: "Deploy to Dev Environment"
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      steps:
+        - script: |
+            curl databricks workspace mkdirs "/$(APP_NAME)/"
+          displayName: 'Create App Dir if it does not exist'
+
+        - script: |
+            curl databricks workspace delete "/$(APP_NAME)/" --recursive
+          displayName: 'Clean Workspace'
+
+        - script: |
+            curl databricks workspace import-dir --overwrite ./databricks/notebooks/ "/$(APP_NAME)/"
+          displayName: 'Copy to Workspace'
+
+    - job: DeployToProd
+      displayName: "Deploy to Prod Environment"
+      dependsOn: "DeployToDev"
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      steps:
+        - script: |
+            databricks workspace mkdirs "/$(APP_NAME)/"
+          displayName: 'Create App Dir if it does not exist'
+          
+        - script: |
+            databricks workspace delete "/$(APP_NAME)/" --recursive
+          displayName: 'Clean Workspace'
+
+        - script: |
+            databricks workspace import-dir --overwrite ./databricks/notebooks/ "/$(APP_NAME)/"
+          displayName: 'Copy to Workspace'
