@@ -26,7 +26,6 @@ stages:
     jobs:
     - job: DeployToDev
       displayName: "Deploy to Dev Environment"
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
       steps:
         - script: |
             curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
@@ -49,7 +48,6 @@ stages:
     - job: DeployToProd
       displayName: "Deploy to Prod Environment"
       dependsOn: "DeployToDev"
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
       steps:
         - script: |
             curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
