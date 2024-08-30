@@ -2,32 +2,69 @@ trigger:
   branches:
     include:
       - develop
+      - main
+  paths:
+    include:
+      - '$(SOURCE_FILES_PATH)/*'
 
-variables:
-  DEV_DATABRICKS_HOST: 'https://<dev-databricks-instance>'
-  QAS_DATABRICKS_HOST: 'https://<qas-databricks-instance>'
-  PRO_DATABRICKS_HOST: 'https://<pro-databricks-instance>'
-  DEV_DATABRICKS_TOKEN: $(DEV_DATABRICKS_TOKEN)
-  QAS_DATABRICKS_TOKEN: $(QAS_DATABRICKS_TOKEN)
-  PRO_DATABRICKS_TOKEN: $(PRO_DATABRICKS_TOKEN)
-  NOTEBOOKS_PATH: '/Workspace/Notebooks'
+pool:
+  vmImage: ubuntu-latest
 
 stages:
-  - stage: DEV
+  - stage: CI
+    displayName: "Continuous Integration"
     jobs:
-      - job: PublishToDEV
-        displayName: 'Publicar no ambiente DEV'
-        pool:
-          vmImage: 'ubuntu-latest'
+      - job: CIJob
+        displayName: "Countinuous Integration Steps"
         steps:
           - checkout: self
+            clean: true
 
-          - script: |
-              echo "Publicando notebooks no ambiente DEV"
-              curl -n -X POST "$(DEV_DATABRICKS_HOST)/api/2.0/workspace/import" \
-                -H "Authorization: Bearer $(DEV_DATABRICKS_TOKEN)" \
-                -F path=$(NOTEBOOKS_PATH)/DEV/ \
-                -F format=SOURCE \
-                -F language=PYTHON \
-                -F content=@notebooks.zip
-            displayName: 'Publicar notebooks no DEV'
+  - stage: CD
+    displayName: "Continuous Deployment"      
+    dependsOn: CI
+    jobs:
+    - job: DeployToDev
+      displayName: "Deploy to Dev Environment"
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      steps:
+        - script: |
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+            $(DEV_DATABRICKS_URL)/api/2.0/workspace/mkdirs -d '{ "path": "/$(TARGET_FILES_PATH)/" }'
+          displayName: 'Create App Dir if it does not exist'
+
+        - script: |
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+            $(DEV_DATABRICKS_URL)/api/2.0/workspace/delete -d '{ "path": "/$(TARGET_FILES_PATH)/", "recursive": true }'
+          displayName: 'Clean Workspace'
+
+        - script: |
+            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+            $(DEV_DATABRICKS_URL)/api/2.0/workspace/import-dir \
+            -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP \
+            -F content=@notebooks.zip
+          displayName: 'Import Notebooks'
+
+    - job: DeployToProd
+      displayName: "Deploy to Prod Environment"
+      dependsOn: "DeployToDev"
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      steps:
+        - script: |
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
+            $(PRO_DATABRICKS_URL)/api/2.0/workspace/mkdirs -d '{ "path": "/$(TARGET_FILES_PATH)/" }'
+          displayName: 'Create App Dir if it does not exist'
+
+        - script: |
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
+            $(PRO_DATABRICKS_URL)/api/2.0/workspace/delete -d '{ "path": "/$(TARGET_FILES_PATH)/", "recursive": true }'
+          displayName: 'Clean Workspace'
+
+        - script: |
+            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
+            $(PRO_DATABRICKS_URL)/api/2.0/workspace/import-dir \
+            -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP \
+            -F content=@notebooks.zip
+          displayName: 'Import Notebooks'
