@@ -1,19 +1,33 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
-- develop
+  branches:
+    include:
+      - develop
 
-pool:
-  vmImage: ubuntu-latest
+variables:
+  DEV_DATABRICKS_HOST: 'https://<dev-databricks-instance>'
+  QAS_DATABRICKS_HOST: 'https://<qas-databricks-instance>'
+  PRO_DATABRICKS_HOST: 'https://<pro-databricks-instance>'
+  DEV_DATABRICKS_TOKEN: $(DEV_DATABRICKS_TOKEN)
+  QAS_DATABRICKS_TOKEN: $(QAS_DATABRICKS_TOKEN)
+  PRO_DATABRICKS_TOKEN: $(PRO_DATABRICKS_TOKEN)
+  NOTEBOOKS_PATH: '/Workspace/Notebooks'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+stages:
+  - stage: DEV
+    jobs:
+      - job: PublishToDEV
+        displayName: 'Publicar no ambiente DEV'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+          - script: |
+              echo "Publicando notebooks no ambiente DEV"
+              curl -n -X POST "$(DEV_DATABRICKS_HOST)/api/2.0/workspace/import" \
+                -H "Authorization: Bearer $(DEV_DATABRICKS_TOKEN)" \
+                -F path=$(NOTEBOOKS_PATH)/DEV/ \
+                -F format=SOURCE \
+                -F language=PYTHON \
+                -F content=@notebooks.zip
+            displayName: 'Publicar notebooks no DEV'
