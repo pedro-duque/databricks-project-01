@@ -5,7 +5,7 @@ trigger:
       - main
   paths:
     include:
-      - 'notebooks/*'
+      - '$(SOURCE_FILES_PATH)/*'
 
 pool:
   vmImage: ubuntu-latest
@@ -29,16 +29,22 @@ stages:
       condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
       steps:
         - script: |
-            curl databricks workspace mkdirs "/$(APP_NAME)/"
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+            $(DEV_DATABRICKS_URL)/api/2.0/workspace/mkdirs -d '{ "path": "/$(TARGET_FILES_PATH)/" }'
           displayName: 'Create App Dir if it does not exist'
 
         - script: |
-            curl databricks workspace delete "/$(APP_NAME)/" --recursive
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+            $(DEV_DATABRICKS_URL)/api/2.0/workspace/delete -d '{ "path": "/$(TARGET_FILES_PATH)/", "recursive": true }'
           displayName: 'Clean Workspace'
 
         - script: |
-            curl databricks workspace import-dir --overwrite ./databricks/notebooks/ "/$(APP_NAME)/"
-          displayName: 'Copy to Workspace'
+            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+            $(DEV_DATABRICKS_URL)/api/2.0/workspace/import-dir \
+            -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP \
+            -F content=@notebooks.zip
+          displayName: 'Import Notebooks'
 
     - job: DeployToProd
       displayName: "Deploy to Prod Environment"
@@ -46,13 +52,19 @@ stages:
       condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
       steps:
         - script: |
-            databricks workspace mkdirs "/$(APP_NAME)/"
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
+            $(PRO_DATABRICKS_URL)/api/2.0/workspace/mkdirs -d '{ "path": "/$(TARGET_FILES_PATH)/" }'
           displayName: 'Create App Dir if it does not exist'
-          
+
         - script: |
-            databricks workspace delete "/$(APP_NAME)/" --recursive
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
+            $(PRO_DATABRICKS_URL)/api/2.0/workspace/delete -d '{ "path": "/$(TARGET_FILES_PATH)/", "recursive": true }'
           displayName: 'Clean Workspace'
 
         - script: |
-            databricks workspace import-dir --overwrite ./databricks/notebooks/ "/$(APP_NAME)/"
-          displayName: 'Copy to Workspace'
+            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
+            $(PRO_DATABRICKS_URL)/api/2.0/workspace/import-dir \
+            -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP \
+            -F content=@notebooks.zip
+          displayName: 'Import Notebooks'
