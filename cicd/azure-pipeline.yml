@@ -38,12 +38,14 @@ stages:
           displayName: 'Clean Workspace'
 
         - script: |
-            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
-            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
-            $(DEV_DATABRICKS_URL)/api/2.0/workspace/import \
-            -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP \
-            -F content=@notebooks.zip
-          displayName: 'Import Notebooks'
+            for notebook in $(find ./$(SOURCE_FILES_PATH)/ -type f); do
+              dest_path="/$(TARGET_FILES_PATH)/$(basename $notebook)"
+              curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+              $(DEV_DATABRICKS_URL)/api/2.0/workspace/import \
+              -F path=$dest_path -F overwrite=true -F format=SOURCE -F language=PYTHON \
+              -F content=@$notebook
+            done
+          displayName: 'Copy to Workspace'
 
     - job: DeployToProd
       displayName: "Deploy to Prod Environment"
@@ -60,9 +62,11 @@ stages:
           displayName: 'Clean Workspace'
 
         - script: |
-            zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
-            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
-            $(PRO_DATABRICKS_URL)/api/2.0/workspace/import \
-            -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP \
-            -F content=@notebooks.zip
-          displayName: 'Import Notebooks'
+            for notebook in $(find ./$(SOURCE_FILES_PATH)/ -type f); do
+              dest_path="/$(TARGET_FILES_PATH)/$(basename $notebook)"
+              curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
+              $(PRO_DATABRICKS_URL)/api/2.0/workspace/import \
+              -F path=$dest_path -F overwrite=true -F format=SOURCE -F language=PYTHON \
+              -F content=@$notebook
+            done
+          displayName: 'Copy to Workspace'
