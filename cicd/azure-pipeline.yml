@@ -26,7 +26,6 @@ stages:
     jobs:
     - job: DeployToDev
       displayName: "Deploy to Dev Environment"
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
       steps:
         - script: |
             curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
@@ -40,16 +39,12 @@ stages:
 
         - script: |
             zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
-            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST \
-            $(DEV_DATABRICKS_URL)/api/2.0/workspace/import-dir \
-            -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP \
-            -F content=@notebooks.zip
+            curl -fsSL -H "Authorization: Bearer $(DEV_BEARER_TOKEN)" -X POST $(DEV_DATABRICKS_URL)/api/2.0/workspace/import -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP -F content=@notebooks.zip
           displayName: 'Import Notebooks'
 
     - job: DeployToProd
       displayName: "Deploy to Prod Environment"
       dependsOn: "DeployToDev"
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
       steps:
         - script: |
             curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
@@ -63,8 +58,5 @@ stages:
 
         - script: |
             zip -r notebooks.zip ./$(SOURCE_FILES_PATH)/
-            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST \
-            $(PRO_DATABRICKS_URL)/api/2.0/workspace/import-dir \
-            -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP \
-            -F content=@notebooks.zip
+            curl -fsSL -H "Authorization: Bearer $(PRO_BEARER_TOKEN)" -X POST $(PRO_DATABRICKS_URL)/api/2.0/workspace/import -F path="/$(TARGET_FILES_PATH)/" -F overwrite=true -F format=ZIP -F content=@notebooks.zip
           displayName: 'Import Notebooks'

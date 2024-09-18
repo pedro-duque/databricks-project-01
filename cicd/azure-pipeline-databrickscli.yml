@@ -1,0 +1,90 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - main
+  paths:
+    include:
+      - '$(SOURCE_FILES_PATH)/*'
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: CI
+    displayName: "Continuous Integration"
+    jobs:
+      - job: CIJob
+        displayName: "Countinuous Integration Steps"
+        steps:
+          - checkout: self
+            clean: true
+          - task: UsePythonVersion@0
+            displayName: 'Use Python 3.9'
+            inputs:
+              versionSpec: 3.9
+
+          - script: |
+              pip install pytest
+            displayName: 'Load Python dependencies'
+            
+          - script: |
+              sudo apt-get update
+              sudo apt-get install -y jq
+            displayName: 'Instalar jq'
+
+  - stage: CD
+    displayName: "Continuous Deployment"      
+    dependsOn: CI
+    jobs:
+    - job: DeployToDev
+      displayName: "Deploy to Dev Environment"
+      steps:
+        - script: |
+            curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          displayName: 'download and install databricks-cli'
+
+        - script: |
+            echo $(DEV_BEARER_TOKEN) | databricks configure --host $(DEV_DATABRICKS_URL) --token $(DEV_BEARER_TOKEN) 
+          displayName: 'Configure DataBricks DEV CLI'
+
+        - script: |
+            databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
+          displayName: 'Create App Dir if it does not exist'
+
+        - script: |
+            databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
+          displayName: 'Clean Workspace'
+
+        - script: |
+            databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
+          displayName: 'Copy to Workspace'
+
+    - job: DeployToProd
+      displayName: "Deploy to Prod Environment"
+      dependsOn: "DeployToDev"
+      steps:
+        - script: |
+            curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          displayName: 'download and install databricks-cli'
+
+        - script: |
+            echo $(PRO_BEARER_TOKEN) | databricks configure --host $(PRO_DATABRICKS_URL) --token $(PRO_BEARER_TOKEN) 
+          displayName: 'Configure DataBricks DEV CLI'
+
+        - script: |
+            databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
+          displayName: 'Create App Dir if it does not exist'
+
+        - script: |
+            databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
+          displayName: 'Clean Workspace'
+
+        - script: |
+            databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
+          displayName: 'Copy to Workspace'
+        
+        - script: |
+            jq '.tasks[].existing_cluster_id = "$CLUSTER_ID"' $(DATABRICKS_JOB_FILE) > cicd/updated-job-config.json 
+            mv cicd/updated-job-config.json $(DATABRICKS_JOB_FILE)
+          displayName: 'Atualizar existing_cluster_id no arquivo JSON'
