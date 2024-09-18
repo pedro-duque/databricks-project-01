@@ -87,4 +87,15 @@ stages:
         - script: |
             jq '.tasks[].existing_cluster_id = "$CLUSTER_ID"' $(DATABRICKS_JOB_FILE) > cicd/updated-job-config.json 
             mv cicd/updated-job-config.json $(DATABRICKS_JOB_FILE)
-          displayName: 'Atualizar existing_cluster_id no arquivo JSON'
+          displayName: 'Update existing_cluster_id in Json file'
+
+        - script: |
+            JOB_ID=$(databricks jobs list | grep $(DATABRICKS_JOB_NAME) | awk '{print $1}')
+            if [ -z "$JOB_ID" ]; then
+              echo "Job não encontrado, criando novo..."
+              databricks jobs create --json-file $(DATABRICKS_JOB_FILE)
+            else
+              echo "Job encontrado, atualizando..."
+              databricks jobs reset --job-id $JOB_ID --json-file $(DATABRICKS_JOB_FILE)
+            fi
+          displayName: 'Create or Update Job in Databricks'
