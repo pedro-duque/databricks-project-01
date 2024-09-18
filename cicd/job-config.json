@@ -1,0 +1,59 @@
+{
+    "name": "alarms_workflow",
+    "email_notifications": {
+        "no_alert_for_skipped_runs": false
+    },
+    "webhook_notifications": {},
+    "timeout_seconds": 0,
+    "schedule": {
+        "quartz_cron_expression": "25 0 9 * * ?",
+        "timezone_id": "America/Sao_Paulo",
+        "pause_status": "UNPAUSED"
+    },
+    "max_concurrent_runs": 1,
+    "tasks": [
+        {
+        "task_key": "task_01",
+        "run_if": "ALL_SUCCESS",
+        "notebook_task": {
+            "notebook_path": "/Workspace/deployed/teste_01",
+            "source": "WORKSPACE"
+        },
+        "existing_cluster_id": "0917-210309-so2zn022",
+        "timeout_seconds": 0,
+        "email_notifications": {},
+        "notification_settings": {
+            "no_alert_for_skipped_runs": false,
+            "no_alert_for_canceled_runs": false,
+            "alert_on_last_attempt": false
+        },
+        "webhook_notifications": {}
+        },
+        {
+        "task_key": "task_02",
+        "depends_on": [
+            {
+            "task_key": "task_01"
+            }
+        ],
+        "run_if": "ALL_SUCCESS",
+        "notebook_task": {
+            "notebook_path": "/Workspace/deployed/teste_02",
+            "source": "WORKSPACE"
+        },
+        "existing_cluster_id": "0917-210309-so2zn022",
+        "timeout_seconds": 0,
+        "email_notifications": {},
+        "notification_settings": {
+            "no_alert_for_skipped_runs": false,
+            "no_alert_for_canceled_runs": false,
+            "alert_on_last_attempt": false
+        },
+        "webhook_notifications": {}
+        }
+    ],
+    "format": "MULTI_TASK",
+    "queue": {
+        "enabled": true
+    }
+}
