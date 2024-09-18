@@ -27,6 +27,11 @@ stages:
           - script: |
               pip install pytest
             displayName: 'Load Python dependencies'
+            
+          - script: |
+              sudo apt-get update
+              sudo apt-get install -y jq
+            displayName: 'Instalar jq'
 
   - stage: CD
     displayName: "Continuous Deployment"      
@@ -78,3 +83,8 @@ stages:
         - script: |
             databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
           displayName: 'Copy to Workspace'
+        
+        - script: |
+            jq '.tasks[].existing_cluster_id = "$CLUSTER_ID"' $(DATABRICKS_JOB_FILE) > cicd/updated-job-config.json 
+            mv cicd/updated-job-config.json $(DATABRICKS_JOB_FILE)
+          displayName: 'Atualizar existing_cluster_id no arquivo JSON'
