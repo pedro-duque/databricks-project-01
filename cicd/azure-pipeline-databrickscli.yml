@@ -108,11 +108,11 @@ stages:
             if [ -z "$JOB_ID" ]; then
               echo "Job não encontrado, criando novo..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
-              databricks jobs create --json-file cicd/job-config.json --debug
+              databricks jobs create --json-file cicd/job-config.json
             else
               echo "Job encontrado, atualizando..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
-              databricks jobs reset --job-id 218158619014638 --json-file cicd/job-config.json --debug
+              databricks jobs reset --job-id 218158619014638 --json-file cicd/job-config.json
             fi
           displayName: 'Create or Update Job in Databricks'
 
