@@ -37,32 +37,32 @@ stages:
     displayName: "Continuous Deployment"      
     dependsOn: CI
     jobs:
-    - job: DeployToDev
-      displayName: "Deploy to Dev Environment"
-      steps:
-        - script: |
-            curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-          displayName: 'download and install databricks-cli'
+    #- job: DeployToDev
+    #  displayName: "Deploy to Dev Environment"
+    #  steps:
+    #    - script: |
+    #        curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+    #      displayName: 'download and install databricks-cli'
 
-        - script: |
-            echo $(DEV_BEARER_TOKEN) | databricks configure --host $(DEV_DATABRICKS_URL) --token $(DEV_BEARER_TOKEN) 
-          displayName: 'Configure DataBricks DEV CLI'
+    #    - script: |
+    #        echo $(DEV_BEARER_TOKEN) | databricks configure --host $(DEV_DATABRICKS_URL) --token $(DEV_BEARER_TOKEN) 
+    #      displayName: 'Configure DataBricks DEV CLI'
 
-        - script: |
-            databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
-          displayName: 'Create App Dir if it does not exist'
+    #    - script: |
+    #        databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
+    #      displayName: 'Create App Dir if it does not exist'
 
-        - script: |
-            databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
-          displayName: 'Clean Workspace'
+    #    - script: |
+    #        databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
+    #      displayName: 'Clean Workspace'
 
-        - script: |
-            databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
-          displayName: 'Copy to Workspace'
+    #    - script: |
+    #        databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
+    #      displayName: 'Copy to Workspace'
 
     - job: DeployToProd
       displayName: "Deploy to Prod Environment"
-      dependsOn: "DeployToDev"
+    #  dependsOn: "DeployToDev"
       steps:
         - script: |
             curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
@@ -72,17 +72,17 @@ stages:
             echo $(PRO_BEARER_TOKEN) | databricks configure --host $(PRO_DATABRICKS_URL) --token $(PRO_BEARER_TOKEN) 
           displayName: 'Configure DataBricks DEV CLI'
 
-        - script: |
-            databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
-          displayName: 'Create App Dir if it does not exist'
+      #  - script: |
+      #      databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
+      #    displayName: 'Create App Dir if it does not exist'
 
-        - script: |
-            databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
-          displayName: 'Clean Workspace'
+      #  - script: |
+      #      databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
+      #    displayName: 'Clean Workspace'
 
-        - script: |
-            databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
-          displayName: 'Copy to Workspace'
+      #  - script: |
+      #      databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
+      #    displayName: 'Copy to Workspace'
         
         - script: |
             jq '.tasks[].existing_cluster_id = "$CLUSTER_ID"' $(DATABRICKS_JOB_FILE) > updated-job-config.json 
@@ -94,7 +94,7 @@ stages:
             echo "O ID do Job é: $JOB_ID"
             ls -la $(Build.SourcesDirectory)
             echo "Arquivos no diretório cicd (artefatos):"
-            ls -la $(Build.ArtifactStagingDirectory)/cicd
+            ls -la $(Build.SourcesDirectory)/cicd
             if [ -z "$JOB_ID" ]; then
               echo "Job não encontrado, criando novo..."
               databricks jobs create --json-file $(DATABRICKS_JOB_FILE) --debug
