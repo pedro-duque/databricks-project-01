@@ -101,7 +101,12 @@ stages:
               databricks jobs create --json-file $(Build.SourcesDirectory)/cicd/job-config.json --debug
             else
               echo "Job encontrado, atualizando..."
-              #echo "Usando o arquivo JSON em: $JSON_FILE_PATH"
+              #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
               databricks jobs reset --job-id 218158619014638 --json-file $(Build.SourcesDirectory)/cicd/job-config.json --debug
             fi
           displayName: 'Create or Update Job in Databricks'
+
+        - script: |
+            echo "Imprimindo o conteúdo do arquivo JSON:"
+            cat $(Build.SourcesDirectory)/cicd/job-config.json.json
+          displayName: 'Imprimir arquivo JSON'
