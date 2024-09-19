@@ -97,9 +97,11 @@ stages:
             ls -la $(Build.SourcesDirectory)/cicd
             if [ -z "$JOB_ID" ]; then
               echo "Job não encontrado, criando novo..."
-              databricks jobs create --json-file $(DATABRICKS_JOB_FILE) --debug
+              echo "Usando o arquivo JSON em: $JSON_FILE_PATH"
+              databricks jobs create --json-file $(Build.SourcesDirectory)/$(DATABRICKS_JOB_FILE) --debug
             else
               echo "Job encontrado, atualizando..."
-              databricks jobs reset --job-id $JOB_ID --json-file $(DATABRICKS_JOB_FILE) --debug
+              echo "Usando o arquivo JSON em: $JSON_FILE_PATH"
+              databricks jobs reset --job-id $JOB_ID --json-file $(Build.SourcesDirectory)/$(DATABRICKS_JOB_FILE) --debug
             fi
           displayName: 'Create or Update Job in Databricks'
