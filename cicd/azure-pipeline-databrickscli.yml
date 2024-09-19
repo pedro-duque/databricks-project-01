@@ -102,6 +102,6 @@ stages:
             else
               echo "Job encontrado, atualizando..."
               #echo "Usando o arquivo JSON em: $JSON_FILE_PATH"
-              databricks jobs reset --job-id 218158619014638 --json-file $(Build.SourcesDirectory)/cicd/job-config.json --debug
+              databricks jobs reset --job-id 218158619014638 --json-file cicd/job-config.json --debug
             fi
           displayName: 'Create or Update Job in Databricks'
