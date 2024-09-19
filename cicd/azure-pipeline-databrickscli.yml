@@ -66,12 +66,12 @@ stages:
     #  dependsOn: "DeployToDev"
       steps:
         - script: |
-            pip install databricks-cli
+            pip install databricks-cli==0.18.0
       #      curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
           displayName: 'download and install databricks-cli'
 
         - script: |
-            databricks configure --host $(PRO_DATABRICKS_URL) --token $(PRO_BEARER_TOKEN) 
+            echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
           displayName: 'Configure DataBricks DEV CLI'
 
       #  - script: |
