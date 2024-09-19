@@ -71,7 +71,7 @@ stages:
           displayName: 'download and install databricks-cli'
 
         - script: |
-            echo $(PRO_BEARER_TOKEN) | databricks configure --host $(PRO_DATABRICKS_URL) --token $(PRO_BEARER_TOKEN) 
+            databricks configure --host $(PRO_DATABRICKS_URL) --token $(PRO_BEARER_TOKEN) 
           displayName: 'Configure DataBricks DEV CLI'
 
       #  - script: |
