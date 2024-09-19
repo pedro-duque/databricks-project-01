@@ -65,9 +65,10 @@ stages:
       displayName: "Deploy to Prod Environment"
     #  dependsOn: "DeployToDev"
       steps:
-      #  - script: |
+        - script: |
+            pip install databricks-cli
       #      curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-      #    displayName: 'download and install databricks-cli'
+          displayName: 'download and install databricks-cli'
 
         - script: |
             echo $(PRO_BEARER_TOKEN) | databricks configure --host $(PRO_DATABRICKS_URL) --token $(PRO_BEARER_TOKEN) 
