@@ -90,7 +90,7 @@ stages:
           displayName: 'Imprimir arquivo JSON'
 
         - script: |
-            jq '.tasks[].existing_cluster_id = $(CLUSTER_ID)' $(DATABRICKS_JOB_FILE) > updated-job-config.json 
+            jq '.tasks[].existing_cluster_id = "0906-171407-w744i9cy"' $(DATABRICKS_JOB_FILE) > updated-job-config.json 
             mv updated-job-config.json $(DATABRICKS_JOB_FILE)
           displayName: 'Update existing_cluster_id in Json file'
 
