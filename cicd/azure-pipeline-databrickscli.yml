@@ -85,13 +85,18 @@ stages:
       #    displayName: 'Copy to Workspace'
         
         - script: |
+            echo "Imprimindo o conteúdo do arquivo JSON:"
+            cat cicd/job-config.json
+          displayName: 'Imprimir arquivo JSON'
+
+        - script: |
             jq '.tasks[].existing_cluster_id = "$CLUSTER_ID"' $(DATABRICKS_JOB_FILE) > updated-job-config.json 
             mv updated-job-config.json $(DATABRICKS_JOB_FILE)
           displayName: 'Update existing_cluster_id in Json file'
 
         - script: |
             echo "Imprimindo o conteúdo do arquivo JSON:"
-            cat cicd/job-config.json.json
+            cat cicd/job-config.json
           displayName: 'Imprimir arquivo JSON'
 
         - script: |
