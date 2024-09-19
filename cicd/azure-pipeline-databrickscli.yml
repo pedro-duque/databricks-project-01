@@ -91,7 +91,7 @@ stages:
 
         - script: |
             echo "Imprimindo o conteúdo do arquivo JSON:"
-            cat $(Build.SourcesDirectory)/cicd/job-config.json.json
+            cat cicd/job-config.json.json
           displayName: 'Imprimir arquivo JSON'
 
         - script: |
@@ -103,11 +103,11 @@ stages:
             if [ -z "$JOB_ID" ]; then
               echo "Job não encontrado, criando novo..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
-              databricks jobs create --json-file $(Build.SourcesDirectory)/cicd/job-config.json --debug
+              databricks jobs create --json-file cicd/job-config.json --debug
             else
               echo "Job encontrado, atualizando..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
-              databricks jobs reset --job-id 218158619014638 --json-file $(Build.SourcesDirectory)/cicd/job-config.json --debug
+              databricks jobs reset --job-id 218158619014638 --json-file cicd/job-config.json --debug
             fi
           displayName: 'Create or Update Job in Databricks'
 
