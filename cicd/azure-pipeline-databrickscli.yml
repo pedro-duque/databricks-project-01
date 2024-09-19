@@ -93,6 +93,8 @@ stages:
             JOB_ID=$(databricks jobs list | grep $(DATABRICKS_JOB_NAME) | awk '{print $1}')
             echo "O ID do Job é: $JOB_ID"
             ls -la $(Build.SourcesDirectory)
+            echo "Arquivos no diretório cicd (artefatos):"
+            ls -la $(Build.ArtifactStagingDirectory)/cicd
             if [ -z "$JOB_ID" ]; then
               echo "Job não encontrado, criando novo..."
               databricks jobs create --json-file $(DATABRICKS_JOB_FILE) --debug
