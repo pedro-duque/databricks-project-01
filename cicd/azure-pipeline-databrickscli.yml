@@ -90,6 +90,11 @@ stages:
           displayName: 'Update existing_cluster_id in Json file'
 
         - script: |
+            echo "Imprimindo o conteúdo do arquivo JSON:"
+            cat $(Build.SourcesDirectory)/cicd/job-config.json.json
+          displayName: 'Imprimir arquivo JSON'
+
+        - script: |
             JOB_ID=$(databricks jobs list | grep $(DATABRICKS_JOB_NAME) | awk '{print $1}')
             echo "O ID do Job é: $JOB_ID"
             ls -la $(Build.SourcesDirectory)
@@ -106,7 +111,4 @@ stages:
             fi
           displayName: 'Create or Update Job in Databricks'
 
-        - script: |
-            echo "Imprimindo o conteúdo do arquivo JSON:"
-            cat $(Build.SourcesDirectory)/cicd/job-config.json.json
-          displayName: 'Imprimir arquivo JSON'
+        
