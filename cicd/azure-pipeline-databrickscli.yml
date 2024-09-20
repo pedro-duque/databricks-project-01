@@ -73,20 +73,23 @@ stages:
               "comment": "Admin token gerado via Azure DevOps"
             }'
             echo "O Token do Payload é: $DATABRICKS_AAD_TOKEN"
-
-
-    - job: DeployToProd
-      displayName: "Deploy to Prod Environment"
-    #  dependsOn: "DeployToDev"
-      steps:
-        - script: |
             pip install databricks-cli==0.18.0
+            databricks configure --host "$DATABRICKS_HOST" --token "$DATABRICKS_AAD_TOKEN"
+            databricks jobs list
+
+
+    #- job: DeployToProd
+    #  displayName: "Deploy to Prod Environment"
+    #  dependsOn: "DeployToDev"
+    #  steps:
+    #    - script: |
+    #        pip install databricks-cli==0.18.0
       #      curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-          displayName: 'download and install databricks-cli'
+    #      displayName: 'download and install databricks-cli'
         
-        - script: |
-            echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
-          displayName: 'Configure DataBricks DEV CLI'
+    #    - script: |
+    #        echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
+    #      displayName: 'Configure DataBricks DEV CLI'
 
       #  - script: |
       #      databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
@@ -100,36 +103,36 @@ stages:
       #      databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
       #    displayName: 'Copy to Workspace'
         
-        - script: |
-            echo "Imprimindo o conteúdo do arquivo JSON:"
-            cat cicd/job-config.json
-          displayName: 'Imprimir arquivo JSON'
+      #  - script: |
+      #      echo "Imprimindo o conteúdo do arquivo JSON:"
+      #      cat cicd/job-config.json
+      #    displayName: 'Imprimir arquivo JSON'
 
-        - script: |
-            jq '.tasks[].existing_cluster_id = "0906-171407-w744i9cy"' $(DATABRICKS_JOB_FILE) > updated-job-config.json 
-            mv updated-job-config.json $(DATABRICKS_JOB_FILE)
-          displayName: 'Update existing_cluster_id in Json file'
+      #  - script: |
+      #      jq '.tasks[].existing_cluster_id = "0906-171407-w744i9cy"' $(DATABRICKS_JOB_FILE) > updated-job-config.json 
+      #      mv updated-job-config.json $(DATABRICKS_JOB_FILE)
+      #    displayName: 'Update existing_cluster_id in Json file'
 
-        - script: |
-            echo "Imprimindo o conteúdo do arquivo JSON:"
-            cat cicd/job-config.json
-          displayName: 'Imprimir arquivo JSON'
+      #  - script: |
+      #      echo "Imprimindo o conteúdo do arquivo JSON:"
+      #      cat cicd/job-config.json
+      #    displayName: 'Imprimir arquivo JSON'
 
-        - script: |
-            JOB_ID=$(databricks jobs list | grep $(DATABRICKS_JOB_NAME) | awk '{print $1}')
-            echo "O ID do Job é: $JOB_ID"
-            ls -la $(Build.SourcesDirectory)
-            echo "Arquivos no diretório cicd (artefatos):"
-            ls -la $(Build.SourcesDirectory)/cicd
-            if [ -z "$JOB_ID" ]; then
-              echo "Job não encontrado, criando novo..."
+      #  - script: |
+      #      JOB_ID=$(databricks jobs list | grep $(DATABRICKS_JOB_NAME) | awk '{print $1}')
+      #      echo "O ID do Job é: $JOB_ID"
+      #      ls -la $(Build.SourcesDirectory)
+      #      echo "Arquivos no diretório cicd (artefatos):"
+      #      ls -la $(Build.SourcesDirectory)/cicd
+      #      if [ -z "$JOB_ID" ]; then
+      #        echo "Job não encontrado, criando novo..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
-              databricks jobs create --json-file cicd/job-config.json
-            else
-              echo "Job encontrado, atualizando..."
+      #        databricks jobs create --json-file cicd/job-config.json
+      #      else
+      #        echo "Job encontrado, atualizando..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
-              databricks jobs reset --job-id 218158619014638 --json-file cicd/job-config.json
-            fi
-          displayName: 'Create or Update Job in Databricks'
+      #        databricks jobs reset --job-id 218158619014638 --json-file cicd/job-config.json
+      #      fi
+      #    displayName: 'Create or Update Job in Databricks'
 
         
