@@ -60,6 +60,19 @@ stages:
     #    - script: |
     #        databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
     #      displayName: 'Copy to Workspace'
+    - job: RetrieveToken
+      displayName: "Retrieve Databricks Token"
+      steps:
+        - script: |
+            DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource https://databricks.azure.net/ --query accessToken --output tsv)
+            DATABRICKS_HOST=$(DEV_DATABRICKS_URL)
+            RESOURCE_GROUP="shared-databricks-rg"
+            WORKSPACE_NAME="devduque"
+            TOKEN_PAYLOAD='{
+              "lifetime_seconds": 600,
+              "comment": "Admin token gerado via Azure DevOps"
+            }'
+            echo "O Toke do Payload é: $TOKEN_PAYLOAD"
 
     - job: DeployToProd
       displayName: "Deploy to Prod Environment"
@@ -69,7 +82,7 @@ stages:
             pip install databricks-cli==0.18.0
       #      curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
           displayName: 'download and install databricks-cli'
-
+        
         - script: |
             echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
           displayName: 'Configure DataBricks DEV CLI'
