@@ -72,7 +72,8 @@ stages:
               "lifetime_seconds": 600,
               "comment": "Admin token gerado via Azure DevOps"
             }'
-            echo "O Toke do Payload é: $TOKEN_PAYLOAD"
+            echo "O Token do Payload é: $DATABRICKS_AAD_TOKEN"
+
 
     - job: DeployToProd
       displayName: "Deploy to Prod Environment"
