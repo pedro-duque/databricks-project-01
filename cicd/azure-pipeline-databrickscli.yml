@@ -1,8 +1,8 @@
 trigger:
   branches:
     include:
-      - develop
-      - main
+      - none
+
   paths:
     include:
       - '$(SOURCE_FILES_PATH)/*'
@@ -10,33 +10,39 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-stages:
-  - stage: CI
-    displayName: "Continuous Integration"
-    jobs:
-      - job: CIJob
-        displayName: "Countinuous Integration Steps"
-        steps:
-          - checkout: self
-            clean: true
-          - task: UsePythonVersion@0
-            displayName: 'Use Python 3.9'
-            inputs:
-              versionSpec: 3.9
+variables:
+  armConnection: sc-shared-databricks-rg
+  resourceID: 93369827-6833-4987-93d9-4b25769bb3d3
+  resourceGroup: shared-databricks-rg
+  databricksName: devduque
 
-          - script: |
-              pip install pytest
-              pip install databricks-cli
-            displayName: 'Load Python dependencies'
+stages:
+#  - stage: CI
+#    displayName: "Continuous Integration"
+#    jobs:
+#      - job: CIJob
+#        displayName: "Countinuous Integration Steps"
+#        steps:
+#          - checkout: self
+#            clean: true
+#          - task: UsePythonVersion@0
+#            displayName: 'Use Python 3.9'
+#            inputs:
+#              versionSpec: 3.9
+
+#          - script: |
+#              pip install pytest
+#              pip install databricks-cli
+#            displayName: 'Load Python dependencies'
             
-          - script: |
-              sudo apt-get update
-              sudo apt-get install -y jq
-            displayName: 'Instalar jq'
+#          - script: |
+#              sudo apt-get update
+#              sudo apt-get install -y jq
+#            displayName: 'Instalar jq'
 
   - stage: CD
     displayName: "Continuous Deployment"      
-    dependsOn: CI
+    #dependsOn: CI
     jobs:
     #- job: DeployToDev
     #  displayName: "Deploy to Dev Environment"
@@ -63,19 +69,17 @@ stages:
     - job: RetrieveToken
       displayName: "Retrieve Databricks Token"
       steps:
-        - script: |
-            DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource https://databricks.azure.net/ --query accessToken --output tsv)
-            DATABRICKS_HOST=$(DEV_DATABRICKS_URL)
-            RESOURCE_GROUP="shared-databricks-rg"
-            WORKSPACE_NAME="devduque"
-            TOKEN_PAYLOAD='{
-              "lifetime_seconds": 600,
-              "comment": "Admin token gerado via Azure DevOps"
-            }'
-            echo "O Token do Payload é: $DATABRICKS_AAD_TOKEN"
-            pip install databricks-cli==0.18.0
-            databricks configure --host "$DATABRICKS_HOST" --token "$DATABRICKS_AAD_TOKEN"
-            databricks jobs list
+      - task: AzureCLI@2
+        displayName: 'Azure CLI'
+        inputs:
+          azureSubscription: $(armConnection)
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |    
+            # Gerar o token de acesso AAD para o serviço Azure Databricks.
+            token=$(az account get-access-token --resource $(resourceID) --query "accessToken" --output tsv)
+            echo "AAD Access Token: $token"
+            echo "##vso[task.setvariable variable=tokenvalue]$token"
 
 
     #- job: DeployToProd
