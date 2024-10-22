@@ -10,39 +10,25 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-variables:
-  armConnection: sc-shared-databricks-rg
-  resourceID: 93369827-6833-4987-93d9-4b25769bb3d3
-  resourceGroup: shared-databricks-rg
-  databricksName: devduque
-
 stages:
-#  - stage: CI
-#    displayName: "Continuous Integration"
-#    jobs:
-#      - job: CIJob
-#        displayName: "Countinuous Integration Steps"
-#        steps:
-#          - checkout: self
-#            clean: true
-#          - task: UsePythonVersion@0
-#            displayName: 'Use Python 3.9'
-#            inputs:
-#              versionSpec: 3.9
-
-#          - script: |
-#              pip install pytest
-#              pip install databricks-cli
-#            displayName: 'Load Python dependencies'
-            
-#          - script: |
-#              sudo apt-get update
-#              sudo apt-get install -y jq
-#            displayName: 'Instalar jq'
+  - stage: CI
+    displayName: "Continuous Integration"
+    jobs:
+      - job: CIJob
+        displayName: "Countinuous Integration Steps"
+        steps:           
+          - script: |
+              sudo apt-get update
+              sudo apt-get install -y jq
+            displayName: 'Instalar jq'
+          - script: |
+              rm /usr/local/bin/databricks
+              curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+            displayName: 'download and install databricks-cli'
 
   - stage: CD
     displayName: "Continuous Deployment"      
-    #dependsOn: CI
+    dependsOn: CI
     jobs:
     #- job: DeployToDev
     #  displayName: "Deploy to Dev Environment"
@@ -66,45 +52,19 @@ stages:
     #    - script: |
     #        databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
     #      displayName: 'Copy to Workspace'
-    - job: RetrieveToken
-      displayName: "Retrieve Databricks Token"
-      steps:
-      - task: AzureCLI@2
-        displayName: 'Azure CLI'
-        inputs:
-          azureSubscription: $(armConnection)
-          scriptType: bash
-          scriptLocation: inlineScript
-          inlineScript: |    
-            # Gerar o token de acesso AAD para o serviço Azure Databricks.
-            token=$(az account get-access-token --resource $(resourceID) --query "accessToken" --output tsv)
-            echo "AAD Access Token: $token"
-            echo "##vso[task.setvariable variable=tokenvalue]$token"
-      - script: |
-          rm /usr/local/bin/databricks
-          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-        displayName: 'download and install databricks-cli'
 
-      - script: |
-          databricks configure --host $(DEV_DATABRICKS_URL) --token $(tokenvalue)
-        displayName: 'Configure DataBricks DEV CLI'
-
-      - script: |
-          databricks jobs list
-        displayName: 'List Databricks Jobs'
-
-    #- job: DeployToProd
-    #  displayName: "Deploy to Prod Environment"
+    - job: DeployToProd
+      displayName: "Deploy to Prod Environment"
     #  dependsOn: "DeployToDev"
-    #  steps:
+      steps:
     #    - script: |
     #        pip install databricks-cli==0.18.0
       #      curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
     #      displayName: 'download and install databricks-cli'
         
-    #    - script: |
-    #        echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
-    #      displayName: 'Configure DataBricks DEV CLI'
+        - script: |
+            echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
+          displayName: 'Configure DataBricks DEV CLI'
 
       #  - script: |
       #      databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
@@ -118,36 +78,36 @@ stages:
       #      databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
       #    displayName: 'Copy to Workspace'
         
-      #  - script: |
-      #      echo "Imprimindo o conteúdo do arquivo JSON:"
-      #      cat cicd/job-config.json
-      #    displayName: 'Imprimir arquivo JSON'
+        - script: |
+            echo "Imprimindo o conteúdo do arquivo JSON:"
+            cat cicd/job-config.json
+          displayName: 'Imprimir arquivo JSON'
 
-      #  - script: |
-      #      jq '.tasks[].existing_cluster_id = "0906-171407-w744i9cy"' $(DATABRICKS_JOB_FILE) > updated-job-config.json 
-      #      mv updated-job-config.json $(DATABRICKS_JOB_FILE)
-      #    displayName: 'Update existing_cluster_id in Json file'
+        - script: |
+            jq '.tasks[].existing_cluster_id = "0906-171407-w744i9cy"' $(DATABRICKS_JOB_FILE) > updated-job-config.json 
+            mv updated-job-config.json $(DATABRICKS_JOB_FILE)
+          displayName: 'Update existing_cluster_id in Json file'
 
-      #  - script: |
-      #      echo "Imprimindo o conteúdo do arquivo JSON:"
-      #      cat cicd/job-config.json
-      #    displayName: 'Imprimir arquivo JSON'
+        - script: |
+            echo "Imprimindo o conteúdo do arquivo JSON:"
+            cat cicd/job-config.json
+          displayName: 'Imprimir arquivo JSON'
 
-      #  - script: |
-      #      JOB_ID=$(databricks jobs list | grep $(DATABRICKS_JOB_NAME) | awk '{print $1}')
-      #      echo "O ID do Job é: $JOB_ID"
-      #      ls -la $(Build.SourcesDirectory)
-      #      echo "Arquivos no diretório cicd (artefatos):"
-      #      ls -la $(Build.SourcesDirectory)/cicd
-      #      if [ -z "$JOB_ID" ]; then
-      #        echo "Job não encontrado, criando novo..."
+        - script: |
+            JOB_ID=$(databricks jobs list | grep $(DATABRICKS_JOB_NAME) | awk '{print $1}')
+            echo "O ID do Job é: $JOB_ID"
+            ls -la $(Build.SourcesDirectory)
+            echo "Arquivos no diretório cicd (artefatos):"
+            ls -la $(Build.SourcesDirectory)/cicd
+            if [ -z "$JOB_ID" ]; then
+              echo "Job não encontrado, criando novo..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
-      #        databricks jobs create --json-file cicd/job-config.json
-      #      else
-      #        echo "Job encontrado, atualizando..."
+              databricks jobs create --json-file cicd/job-config.json
+            else
+              echo "Job encontrado, atualizando..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
-      #        databricks jobs reset --job-id 218158619014638 --json-file cicd/job-config.json
-      #      fi
-      #    displayName: 'Create or Update Job in Databricks'
+              databricks jobs reset --job-id 218158619014638 --json-file cicd/job-config.json
+            fi
+          displayName: 'Create or Update Job in Databricks'
 
         
