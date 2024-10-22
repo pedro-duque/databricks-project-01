@@ -1,5 +1,11 @@
 trigger:
-  - none
+  branches:
+    include:
+      - none
+
+  paths:
+    include:
+      - '$(SOURCE_FILES_PATH)/*'
 
 pr: none
 
