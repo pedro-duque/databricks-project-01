@@ -102,7 +102,7 @@ stages:
               jq '{job_id: 218158619014638, new_settings: .}' $(DATABRICKS_JOB_FILE) > updated-job-config.json
               mv updated-job-config.json $(DATABRICKS_JOB_FILE)
               cat cicd/job-config.json
-              databricks jobs reset --json-file cicd/job-config.json
+              databricks jobs reset --json cicd/job-config.json
             fi
           displayName: 'Create or Update Job in Databricks'
 
