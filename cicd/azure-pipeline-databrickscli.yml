@@ -69,9 +69,13 @@ stages:
             curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
           displayName: 'download and install databricks-cli'
 
+      #  - script: |
+      #      echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
+      #    displayName: 'Configure DataBricks DEV CLI'
+
         - script: |
-            echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
-          displayName: 'Configure DataBricks DEV CLI'
+            echo $(PRO_BEARER_TOKEN) | databricks configure --host $(PRO_DATABRICKS_URL) --token $(PRO_BEARER_TOKEN) 
+          displayName: 'Configure DataBricks PRO CLI'
 
         - script: |
             echo "Imprimindo o conteúdo do arquivo JSON:"
