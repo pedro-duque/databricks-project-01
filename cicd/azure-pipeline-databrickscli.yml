@@ -7,28 +7,30 @@ trigger:
     include:
       - '$(SOURCE_FILES_PATH)/*'
 
+pr: none
+
 pool:
   vmImage: ubuntu-latest
 
 stages:
-  - stage: CI
-    displayName: "Continuous Integration"
-    jobs:
-      - job: CIJob
-        displayName: "Countinuous Integration Steps"
-        steps:           
-          - script: |
-              sudo apt-get update
-              sudo apt-get install -y jq
-            displayName: 'Instalar jq'
-          - script: |
-              rm /usr/local/bin/databricks
-              curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-            displayName: 'download and install databricks-cli'
+#  - stage: CI
+#    displayName: "Continuous Integration"
+#    jobs:
+#      - job: CIJob
+#        displayName: "Countinuous Integration Steps"
+#        steps:           
+#          - script: |
+#              sudo apt-get update
+#              sudo apt-get install -y jq
+#            displayName: 'Instalar jq'
+#          - script: |
+#              rm /usr/local/bin/databricks
+#              curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+#            displayName: 'download and install databricks-cli'
 
   - stage: CD
     displayName: "Continuous Deployment"      
-    dependsOn: CI
+    #dependsOn: CI
     jobs:
     #- job: DeployToDev
     #  displayName: "Deploy to Dev Environment"
@@ -57,27 +59,20 @@ stages:
       displayName: "Deploy to Prod Environment"
     #  dependsOn: "DeployToDev"
       steps:
-    #    - script: |
-    #        pip install databricks-cli==0.18.0
-      #      curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-    #      displayName: 'download and install databricks-cli'
-        
+        - script: |
+              sudo apt-get update
+              sudo apt-get install -y jq
+          displayName: 'Instalar jq'
+
+        - script: |
+            rm /usr/local/bin/databricks
+            curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          displayName: 'download and install databricks-cli'
+
         - script: |
             echo -e "$(PRO_DATABRICKS_URL)\n$(PRO_BEARER_TOKEN)" | databricks configure --token 
           displayName: 'Configure DataBricks DEV CLI'
 
-      #  - script: |
-      #      databricks workspace mkdirs "/$(TARGET_FILES_PATH)/"
-      #    displayName: 'Create App Dir if it does not exist'
-
-      #  - script: |
-      #      databricks workspace delete "/$(TARGET_FILES_PATH)/" --recursive
-      #    displayName: 'Clean Workspace'
-
-      #  - script: |
-      #      databricks workspace import-dir --overwrite ./$(SOURCE_FILES_PATH)/ "/$(TARGET_FILES_PATH)/"
-      #    displayName: 'Copy to Workspace'
-        
         - script: |
             echo "Imprimindo o conteúdo do arquivo JSON:"
             cat cicd/job-config.json
