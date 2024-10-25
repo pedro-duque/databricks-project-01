@@ -106,7 +106,8 @@ stages:
               echo "Job encontrado, atualizando..."
               #echo "Usando o arquivo JSON em: $(DATABRICKS_JOB_FILE)"
               #jq '{job_id: 218158619014638, new_settings: .} | del(.new_settings.format)' $(DATABRICKS_JOB_FILE) > updated-job-config.json
-              jq --arg job_id $(JOB_ID) '{job_id: $job_id | tonumber, new_settings: .} | del(.new_settings.format)' $(DATABRICKS_JOB_FILE) > updated-job-config.json
+              #jq --arg job_id $(JOB_ID) '{job_id: $job_id | tonumber, new_settings: .} | del(.new_settings.format)' $(DATABRICKS_JOB_FILE) > updated-job-config.json
+              echo "{\"job_id\": $(JOB_ID), \"new_settings\": $(cat $(DATABRICKS_JOB_FILE))}" > updated-job-config.json
               mv updated-job-config.json $(DATABRICKS_JOB_FILE)
               cat cicd/job-config.json
               databricks jobs reset --help
